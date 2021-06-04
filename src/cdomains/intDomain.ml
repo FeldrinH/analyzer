@@ -2011,10 +2011,10 @@ struct
    | Sign(false, false, false) -> "bot"
    | Sign(true, false, false) -> "<0"
    | Sign(false, false, true) -> ">0"
+   | Sign(false, true, false) -> "=0"
    | Sign(true, true, false) -> "<=0"
    | Sign(false, true, true) -> ">=0"
    | Sign(true, false, true) -> "<>0"
-   | Sign(false, true, false) -> "=0"
 
   include Std (struct type nonrec t = t let name = name let top_of = top_of let bot_of = bot_of let show = show let equal = equal end)
   (* FIXME: poly compare *)
@@ -2029,7 +2029,7 @@ struct
 
   let of_bool x = if x then Sign(false,false,true) else Sign(false,true,false)
   let to_bool = function
-   | Sign(false,false,true) -> Some(true)
+   | Sign(true,false,_) | Sign(_,false,true) -> Some(true)
    | Sign(false,true,false) -> Some(false)
    | _ -> None
   let is_bool x = to_bool x <> None
@@ -2042,6 +2042,8 @@ struct
    | _ -> None
   let is_int x = to_int x <> None
 
+  let propagate_bot f x y = if is_bot x || is_bot y then bot () else f x y
+
   let neg (Sign(n,z,p)) = Sign(p, z, n)
   let add (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) = Sign(
     n1 || n2,
@@ -2053,19 +2055,19 @@ struct
     z1 && z2 || n1 && n2 || p1 && p2,
     p1 || n2
   )
-  let mul (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) = Sign(
+  let mul' (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) = Sign(
     n1 && p2 || p1 && n2,
     z1 || z2,
     n1 && n2 || p1 && p2
   )
-  let div (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) = Sign(
+  let mul = propagate_bot mul'
+  let div' (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) = Sign(
     n1 && p2 || p1 && n2,
-    not z2,
+    n2 || p2,
     n1 && n2 || p1 && p2
   )
+  let div = propagate_bot div'
   let rem (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) = failwith "unimplemented"
-
-  let propagate_bot f x y = if is_bot x || is_bot y then bot () else f x y
 
   let lognot (Sign(n,z,p)) = Sign(false, p || n, z)
   let logand' (Sign(n1,z1,p1)) (Sign(n2,z2,p2)) =
@@ -2097,8 +2099,8 @@ struct
   let bitand x y = failwith "unimplemented"
   let bitor x y = failwith "unimplemented"
   let bitxor x y = failwith "unimplemented"
-  let shift_left n1 n2 = failwith "unimplemented"
-  let shift_right n1 n2 = failwith "unimplemented"
+  let shift_left x y = failwith "unimplemented"
+  let shift_right x y = failwith "unimplemented"
 
   let cast_to ?torg t x = failwith "unimplemented"
   let arbitrary () = failwith "unimplemented"
