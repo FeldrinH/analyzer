@@ -2241,7 +2241,8 @@ struct
       let add_globals (st: store) (fun_st: store) =
         if get_bool "ana.library" then
           (* Update globals that were written by the called function *)
-          Stats.time "update_lvals" (update_lvals (Analyses.ask_of_ctx ctx) st after ctx.global) globals
+          st
+          (* Stats.time "update_lvals globals" (update_lvals (Analyses.ask_of_ctx ctx) st after ctx.global) globals *)
         else
           (* Remove the return value as this is dealt with separately. *)
           let cpa_noreturn = CPA.remove (return_varinfo ()) fun_st.cpa in
